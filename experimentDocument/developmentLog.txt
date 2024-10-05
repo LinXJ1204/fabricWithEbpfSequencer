@@ -1,0 +1,14 @@
+2024
+
+-- 10/5 
+
+1. Add UDP broadcast
+
+Key file: internal/pkg/gateway/submit.go
+    Peer uses submitNonBFT function to submit tx to orderer. And here we send tx to sequencer using UDP.
+    The function itself didn't have function to send by UDP so here we add a function which support for it.
+    (Done)
+
+Key file: internal/pkg/gateway/gateway.go
+    The file is about gateway server and here we add a config to connect sequencer.
+    (TODO)

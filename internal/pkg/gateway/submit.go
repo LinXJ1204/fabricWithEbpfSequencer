@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"net"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -24,6 +26,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
+
+var serverAddrStr = os.Getenv("SERVER_ADDR")
 
 // Submit will send the signed transaction to the ordering service. The response indicates whether the transaction was
 // successfully received by the orderer. This does not imply successful commit of the transaction, only that is has
@@ -175,7 +179,7 @@ func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *co
 			defer close(done)
 			ctx, cancel := context.WithTimeout(ctx, gs.options.BroadcastTimeout)
 			defer cancel()
-
+			err = gs.broadcastByUDP(txn)
 			response, err = gs.broadcast(ctx, orderer, txn)
 		}()
 		select {
@@ -224,6 +228,44 @@ func (gs *Server) broadcast(ctx context.Context, orderer *orderer, txn *common.E
 	}
 
 	return response, nil
+}
+
+func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
+	if serverAddrStr == "" {
+		serverAddrStr = "host.docker.internal:7072"
+	}
+
+	fmt.Println("Sending transaction to orderer by UDP!!!")
+
+	serverAddr, err := net.ResolveUDPAddr("udp", serverAddrStr)
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return err
+	}
+
+	conn, err := net.DialUDP("udp", nil, serverAddr)
+	if err != nil {
+		fmt.Println("Error connecting to server:", err)
+		return err
+	}
+	defer conn.Close()
+
+	data, err := proto.Marshal(txn)
+	if err != nil {
+		fmt.Println("Failed to marshal envelope:", err)
+		return err
+	}
+
+	seqBytes := []byte{0x00, 0x00} // The extra bytes you want to add
+	dataWithseqBytes := append(data, seqBytes...)
+
+	_, err = conn.Write(dataWithseqBytes)
+	if err != nil {
+		fmt.Println("Error sending envelope with extra bytes:", err)
+		return err
+	}
+
+	return nil
 }
 
 func prepareTransaction(header *common.Header, payload *peer.ChaincodeProposalPayload, action *peer.ChaincodeEndorsedAction) (*common.Envelope, error) {
