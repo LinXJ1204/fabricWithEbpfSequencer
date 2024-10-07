@@ -12,3 +12,9 @@ Key file: internal/pkg/gateway/submit.go
 Key file: internal/pkg/gateway/gateway.go
     The file is about gateway server and here we add a config to connect sequencer.
     (TODO)
+
+-- 10/6
+
+1. Add UDP server in orderer
+
+Key file: 
