@@ -21,7 +21,7 @@ func NewUDPServer(_host string, _port uint, _sendChan chan *message, _exitChanUD
 
 func (us *UdpServer) Start() error {
 
-	addr, err := net.ResolveUDPAddr("udp", ":7072")
+	addr, err := net.ResolveUDPAddr("udp", ":7073")
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return err
