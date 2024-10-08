@@ -42,7 +42,7 @@ type ChannelSupport interface {
 type Consenter interface {
 	// Order accepts a message or returns an error indicating the cause of failure
 	// It ultimately passes through to the consensus.Chain interface
-	Order(env *cb.Envelope, configSeq uint64) error
+	Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error
 
 	// Configure accepts a reconfiguration or returns an error indicating the cause of failure
 	// It ultimately passes through to the consensus.Chain interface
@@ -172,7 +172,7 @@ func (bh *Handler) ProcessMessage(msg *cb.Envelope, addr string) (resp *ab.Broad
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}
 		}
 
-		err = processor.Order(msg, configSeq)
+		err = processor.Order(msg, configSeq, 0, 0)
 		if err != nil {
 			logger.Warningf("[channel: %s] Rejecting broadcast of normal message from %s with SERVICE_UNAVAILABLE: rejected by Order: %s", chdr.ChannelId, addr, err)
 			return &ab.BroadcastResponse{Status: cb.Status_SERVICE_UNAVAILABLE, Info: err.Error()}

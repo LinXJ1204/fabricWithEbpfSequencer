@@ -43,7 +43,7 @@ func (mch *mockChain) Errored() <-chan struct{} {
 	return nil
 }
 
-func (mch *mockChain) Order(env *cb.Envelope, configSeq uint64) error {
+func (mch *mockChain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error {
 	mch.queue <- env
 	return nil
 }

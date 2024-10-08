@@ -223,7 +223,7 @@ func (fake *ChannelSupport) ConfigureReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *ChannelSupport) Order(arg1 *common.Envelope, arg2 uint64) error {
+func (fake *ChannelSupport) Order(arg1 *common.Envelope, arg2 uint64, sequencerId uint64, sequencerNumber uint64) error {
 	fake.orderMutex.Lock()
 	ret, specificReturn := fake.orderReturnsOnCall[len(fake.orderArgsForCall)]
 	fake.orderArgsForCall = append(fake.orderArgsForCall, struct {

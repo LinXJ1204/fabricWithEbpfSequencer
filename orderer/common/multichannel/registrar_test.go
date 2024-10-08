@@ -123,7 +123,7 @@ func testMessageOrderAndRetrieval(maxMessageCount uint32, chainID string, chainS
 		messages[i] = makeNormalTx(chainID, int(i))
 	}
 	for _, message := range messages {
-		chainSupport.Order(message, 0)
+		chainSupport.Order(message, 0, 0, 0)
 	}
 	it, _ := lr.Iterator(&ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 1}}})
 	defer it.Close()

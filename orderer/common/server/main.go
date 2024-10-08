@@ -193,6 +193,10 @@ func Main() {
 
 	mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
 
+	serverUDP := NewUDPServer("localhost", 7072, manager)
+	go serverUDP.Start()
+	defer serverUDP.Close()
+
 	server := NewServer(
 		manager,
 		metricsProvider,

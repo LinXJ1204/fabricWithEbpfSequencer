@@ -83,7 +83,10 @@ func (ch *chain) WaitReady() error {
 }
 
 // Order accepts normal messages for ordering
-func (ch *chain) Order(env *cb.Envelope, configSeq uint64) error {
+func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error {
+	fmt.Println("=======TESTTEST=======")
+	fmt.Println(sequencerNumber)
+
 	select {
 	case ch.sendChan <- &message{
 		configSeq: configSeq,

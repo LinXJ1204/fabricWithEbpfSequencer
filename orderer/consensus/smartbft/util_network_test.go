@@ -288,7 +288,7 @@ func (n *Node) SendTx(tx *cb.Envelope) error {
 	if isConfigTx(tx) {
 		return n.Chain.Configure(tx, n.State.Sequence)
 	}
-	return n.Chain.Order(tx, n.State.Sequence)
+	return n.Chain.Order(tx, n.State.Sequence, 0, 0)
 }
 
 func (n *Node) GetConfigBlock(num uint64) *cb.Block {

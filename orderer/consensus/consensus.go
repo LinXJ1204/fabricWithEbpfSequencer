@@ -59,7 +59,7 @@ type Chain interface {
 	// If the configSeq advances, it is the responsibility of the consenter
 	// to revalidate and potentially discard the message
 	// The consenter may return an error, indicating the message was not accepted
-	Order(env *cb.Envelope, configSeq uint64) error
+	Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error
 
 	// Configure accepts a message which reconfigures the channel and will
 	// trigger an update to the configSeq if committed.  The configuration must have
