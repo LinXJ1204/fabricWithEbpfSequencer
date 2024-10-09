@@ -50,8 +50,45 @@ func main() {
 		// Display the received Envelope
 		fmt.Printf("Received Envelope from %s: Payload = %s, Signature = %s\n", clientAddr, envelope.GetPayload(), envelope.GetSignature())
 
+		err = forward(envelope)
+		if err != nil {
+			fmt.Println("Error forward to orderer:", err)
+		}
+
 		// Optionally, respond to the client
 		response := []byte("Acknowledged")
 		conn.WriteToUDP(response, clientAddr)
 	}
+}
+
+func forward(tx *common.Envelope) error {
+	serverAddr, err := net.ResolveUDPAddr("udp", ":7073")
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return err
+	}
+
+	conn, err := net.DialUDP("udp", nil, serverAddr)
+	if err != nil {
+		fmt.Println("Error connecting to server:", err)
+		return err
+	}
+	defer conn.Close()
+
+	data, err := proto.Marshal(tx)
+	if err != nil {
+		fmt.Println("Failed to marshal envelope:", err)
+		return err
+	}
+
+	seqBytes := []byte{0x00, 0x00} // The extra bytes you want to add
+	dataWithseqBytes := append(data, seqBytes...)
+
+	_, err = conn.Write(dataWithseqBytes)
+	if err != nil {
+		fmt.Println("Error sending envelope with extra bytes:", err)
+		return err
+	}
+
+	return nil
 }
