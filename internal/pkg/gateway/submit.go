@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/rand"
 	"net"
 	"os"
 	"sync/atomic"
@@ -164,14 +165,49 @@ func computeBFTQuorum(N uint64) (Q int, F int) {
 }
 
 func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *common.Envelope, logger *flogging.FabricLogger) (*gp.SubmitResponse, error) {
-	// non-BFT - only need one successful response
-	// try each orderer in random order
-	err := gs.broadcastByUDP(txn)
-	if err != nil {
-		return nil, err
-	}
+	var errDetails []proto.Message
+	for _, index := range rand.Perm(len(orderers)) {
+		orderer := orderers[index]
+		logger.Infow("Sending transaction to orderer", "endpoint", orderer.logAddress)
 
-	return nil, nil
+		var response *ab.BroadcastResponse
+		var err error
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			ctx, cancel := context.WithTimeout(ctx, gs.options.BroadcastTimeout)
+			defer cancel()
+
+			response, err = gs.broadcast(ctx, orderer, txn)
+		}()
+		select {
+		case <-done:
+			// Broadcast completed normally
+		case <-ctx.Done():
+			// Overall submit timeout expired
+			logger.Warnw("Submit call timed out while broadcasting to ordering service")
+			return nil, newRpcError(codes.DeadlineExceeded, "submit timeout expired while broadcasting to ordering service")
+		}
+
+		if err != nil {
+			errDetails = append(errDetails, errorDetail(orderer.endpointConfig, err.Error()))
+			logger.Warnw("Error sending transaction to orderer", "endpoint", orderer.logAddress, "err", err)
+			continue
+		}
+
+		status := response.GetStatus()
+		if status == common.Status_SUCCESS {
+			return &gp.SubmitResponse{}, nil
+		}
+
+		logger.Warnw("Unsuccessful response sending transaction to orderer", "endpoint", orderer.logAddress, "status", status, "info", response.GetInfo())
+
+		if status >= 400 && status < 500 {
+			// client error - don't retry
+			return nil, newRpcError(codes.Aborted, fmt.Sprintf("received unsuccessful response from orderer: status=%s, info=%s", common.Status_name[int32(status)], response.GetInfo()))
+		}
+	}
+	return nil, newRpcError(codes.Unavailable, "no orderers could successfully process transaction", errDetails...)
 }
 
 func (gs *Server) broadcast(ctx context.Context, orderer *orderer, txn *common.Envelope) (*ab.BroadcastResponse, error) {
