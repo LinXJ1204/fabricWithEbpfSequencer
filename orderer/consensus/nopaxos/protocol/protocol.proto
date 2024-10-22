@@ -1,0 +1,256 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package atomix.nopaxos.protocol;
+
+import "atomix/nopaxos/protocol/log.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option (gogoproto.testgen_all) = true;
+option (gogoproto.populate_all) = true;
+option (gogoproto.equal_all) = true;
+
+message ClientMessage {
+    oneof message {
+        CommandRequest command = 1;
+        CommandReply command_reply = 2;
+        CommandClose command_close = 3;
+        QueryRequest query = 4;
+        QueryReply query_reply = 5;
+        QueryClose query_close = 6;
+    }
+}
+
+message ReplicaMessage {
+    oneof message {
+        CommandRequest command = 1;
+        CommandReply command_reply = 2;
+        QueryRequest query = 3;
+        QueryReply query_reply = 4;
+        SlotLookup slot_lookup = 5;
+        GapCommitRequest gap_commit = 6;
+        GapCommitReply gap_commit_reply = 7;
+        ViewChangeRequest view_change_request = 8;
+        ViewChange view_change = 9;
+        ViewChangeRepair view_change_repair = 10;
+        ViewChangeRepairReply view_change_repair_reply = 11;
+        StartView start_view = 12;
+        ViewRepair view_repair = 13;
+        ViewRepairReply view_repair_reply = 14;
+        SyncPrepare sync_prepare = 15;
+        SyncRepair sync_repair = 16;
+        SyncRepairReply sync_repair_reply = 17;
+        SyncReply sync_reply = 18;
+        SyncCommit sync_commit = 19;
+        Recover recover = 20;
+        RecoverReply recover_reply = 21;
+        Ping ping = 22;
+    }
+}
+
+message ViewId {
+    uint64 leader_num = 1 [(gogoproto.casttype) = "LeaderID"];
+    uint64 session_num = 2 [(gogoproto.casttype) = "SessionID"];
+}
+
+message CommandRequest {
+    uint64 session_num = 1 [(gogoproto.casttype) = "SessionID"];
+    uint64 message_num = 2 [(gogoproto.casttype) = "MessageID"];
+    google.protobuf.Timestamp timestamp = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    bytes value = 4;
+}
+
+message CommandReply {
+    uint64 message_num = 1 [(gogoproto.casttype) = "MessageID"];
+    string sender = 2 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
+    uint64 slot_num = 4 [(gogoproto.casttype) = "LogSlotID"];
+    bytes value = 5;
+}
+
+message CommandClose {
+    uint64 message_num = 1 [(gogoproto.casttype) = "MessageID"];
+    string sender = 2 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
+}
+
+message QueryRequest {
+    uint64 session_num = 1 [(gogoproto.casttype) = "SessionID"];
+    uint64 message_num = 2 [(gogoproto.casttype) = "MessageID"];
+    google.protobuf.Timestamp timestamp = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    bytes value = 4;
+}
+
+message QueryReply {
+    uint64 message_num = 1 [(gogoproto.casttype) = "MessageID"];
+    string sender = 2 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
+    bytes value = 4;
+}
+
+message QueryClose {
+    uint64 message_num = 1 [(gogoproto.casttype) = "MessageID"];
+    string sender = 2 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
+}
+
+message Recover {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    string recovery_id = 2 [(gogoproto.customname) = "RecoveryID"];
+}
+
+message RecoverReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    string recovery_id = 2 [(gogoproto.customname) = "RecoveryID"];
+    ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 4 [(gogoproto.casttype) = "MessageID"];
+    uint64 checkpoint_slot_num = 5 [(gogoproto.casttype) = "LogSlotID"];
+    bytes checkpoint = 6;
+    repeated LogEntry log = 7;
+}
+
+message SlotLookup {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+}
+
+message GapCommitRequest {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 slot_num = 3 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message GapCommitReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 slot_num = 3 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message ViewChangeRequest {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+}
+
+message ViewChange {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    ViewId last_normal = 3;
+    uint64 message_num = 4 [(gogoproto.casttype) = "MessageID"];
+    bytes no_op_filter = 5;
+    uint64 first_log_slot_num = 6 [(gogoproto.casttype) = "LogSlotID"];
+    uint64 last_log_slot_num = 7 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message ViewChangeRepair {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    uint64 checkpoint = 4 [(gogoproto.casttype) = "LogSlotID"];
+    repeated uint64 slot_nums = 5 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message ViewChangeRepairReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    uint64 checkpoint_slot_num = 4 [(gogoproto.casttype) = "LogSlotID"];
+    bytes checkpoint = 5;
+    repeated uint64 slot_nums = 6 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message StartView {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    bytes no_op_filter = 4;
+    uint64 first_log_slot_num = 5 [(gogoproto.casttype) = "LogSlotID"];
+    uint64 last_log_slot_num = 6 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message ViewRepair {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    uint64 checkpoint = 4 [(gogoproto.casttype) = "LogSlotID"];
+    repeated uint64 slot_nums = 5 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message ViewRepairReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 checkpoint_slot_num = 3 [(gogoproto.casttype) = "LogSlotID"];
+    bytes checkpoint = 4;
+    repeated LogEntry entries = 5;
+}
+
+message SyncPrepare {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    bytes no_op_filter = 4;
+    uint64 first_log_slot_num = 5 [(gogoproto.casttype) = "LogSlotID"];
+    uint64 last_log_slot_num = 6 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message SyncRepair {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 checkpoint = 3 [(gogoproto.casttype) = "LogSlotID"];
+    repeated uint64 slot_nums = 4 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message SyncRepairReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 checkpoint_slot_num = 3 [(gogoproto.casttype) = "LogSlotID"];
+    bytes checkpoint = 4;
+    repeated LogEntry entries = 5;
+}
+
+message SyncReply {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 slot_num = 3 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message SyncCommit {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+    uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
+    uint64 sync_point = 4 [(gogoproto.casttype) = "LogSlotID"];
+}
+
+message Ping {
+    string sender = 1 [(gogoproto.casttype) = "MemberID"];
+    ViewId view_id = 2 [(gogoproto.customname) = "ViewID"];
+}
+
+message Indexed {
+    uint64 index = 1;
+    bytes value = 2;
+}
+
+service ClientService {
+    rpc ClientStream (stream ClientMessage) returns (stream ClientMessage);
+}
+
+service ReplicaService {
+    rpc ReplicaStream (stream ReplicaMessage) returns (stream ReplicaMessage);
+}

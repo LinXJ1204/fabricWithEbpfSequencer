@@ -194,7 +194,7 @@ func (gs *Server) broadcast(ctx context.Context, orderer *orderer, txn *common.E
 
 func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
 	if serverAddrStr == "" {
-		serverAddrStr = "host.docker.internal:7072"
+		serverAddrStr = "192.168.50.230:7072"
 	}
 
 	fmt.Println("Sending transaction to orderer by UDP!!!")

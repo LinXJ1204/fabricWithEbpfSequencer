@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/hyperledger/fabric-protos-go-apiv2/common"
 	"github.com/hyperledger/fabric/orderer/common/multichannel"
@@ -12,21 +13,22 @@ import (
 
 type UdpServer struct {
 	host string
-	port uint
+	port uint16
 	*multichannel.Registrar
 	exitChanUDP chan struct{}
 }
 
 func NewUDPServer(
 	_host string,
-	_port uint,
+	_port uint16,
 	r *multichannel.Registrar,
 ) *UdpServer {
 	return &UdpServer{host: _host, port: _port, exitChanUDP: make(chan struct{}), Registrar: r}
 }
 
 func (us *UdpServer) Start() error {
-	addr, err := net.ResolveUDPAddr("udp", ":7073")
+	address := net.JoinHostPort("", strconv.Itoa(int(us.port)))
+	addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return err

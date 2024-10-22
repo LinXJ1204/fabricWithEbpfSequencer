@@ -2,6 +2,7 @@ package nopaxos
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
@@ -9,6 +10,8 @@ import (
 	"github.com/hyperledger/fabric-protos-go-apiv2/orderer/etcdraft"
 	"github.com/hyperledger/fabric/orderer/common/localconfig"
 	"github.com/hyperledger/fabric/orderer/consensus"
+	nopaxosConfig "github.com/hyperledger/fabric/orderer/consensus/nopaxos/config"
+	"github.com/hyperledger/fabric/orderer/consensus/nopaxos/protocol"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
@@ -20,11 +23,13 @@ type consenter struct {
 }
 
 type chain struct {
-	support     consensus.ConsenterSupport
-	sendChan    chan *message
-	exitChan    chan struct{}
-	exitChanUDP chan struct{}
-	consenters  []*etcdraft.Consenter
+	support       consensus.ConsenterSupport
+	sendChan      chan *message
+	exitChan      chan struct{}
+	exitChanUDP   chan struct{}
+	consenters    []*etcdraft.Consenter
+	NopaxosServer *Server
+	Count         uint64
 }
 
 type message struct {
@@ -49,19 +54,47 @@ func (nps *consenter) HandleChain(support consensus.ConsenterSupport, metadata *
 		return nil, errors.Wrap(err, "failed to unmarshal consensus metadata")
 	}
 
-	return newChain(support, m.Consenters), nil
+	return newChain(support, m.Consenters, nps.config), nil
 }
 
 func (nps *consenter) IsChannelMember(joinBlock *cb.Block) (bool, error) {
 	return true, nil
 }
 
-func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consenter) *chain {
+func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consenter, config *localconfig.TopLevel) *chain {
+
+	nopaxosServerConfig := &nopaxosConfig.ProtocolConfig{}
+
+	host, _, err := net.SplitHostPort(config.Operations.ListenAddress)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	members := make(map[string]protocol.Member)
+	for _, consenter := range consenters {
+		members[consenter.GetHost()] = protocol.Member{
+			ID:           consenter.GetHost(),
+			Host:         consenter.GetHost(),
+			APIPort:      int(consenter.GetPort()) + 35,
+			ProtocolPort: int(consenter.GetPort()) + 36,
+		}
+	}
+
+	cluster := protocol.NodeCluster{
+		MemberID: host,
+		Members:  members,
+	}
+
 	return &chain{
 		support:    support,
 		sendChan:   make(chan *message),
 		exitChan:   make(chan struct{}),
 		consenters: consenters,
+		NopaxosServer: NewNodeServer(
+			cluster,
+			nopaxosServerConfig,
+		),
+		Count: 1,
 	}
 }
 
@@ -86,6 +119,22 @@ func (ch *chain) WaitReady() error {
 func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error {
 	fmt.Println("=======TESTTEST=======")
 	fmt.Println(sequencerNumber)
+
+	ch.NopaxosServer.nopaxos.Command(
+		&protocol.CommandRequest{
+			SessionNum: 1,
+			MessageNum: protocol.MessageID(ch.Count),
+			Timestamp:  time.Now(),
+			Value:      env.Payload,
+		},
+		nil,
+	)
+
+	ch.Count++
+
+	if !ch.NopaxosServer.nopaxos.IsLeader() {
+		return nil
+	}
 
 	select {
 	case ch.sendChan <- &message{
@@ -119,6 +168,9 @@ func (ch *chain) Errored() <-chan struct{} {
 func (ch *chain) main() {
 	var timer <-chan time.Time
 	var err error
+
+	go ch.NopaxosServer.Start()
+	defer ch.NopaxosServer.Stop()
 
 	for {
 		seq := ch.support.Sequence()
