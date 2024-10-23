@@ -168,7 +168,7 @@ func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *co
 	// try each orderer in random order
 	err := gs.broadcastByUDP(txn)
 	if err != nil {
-		return nil, err
+		return &gp.SubmitResponse{}, err
 	}
 
 	return nil, nil
