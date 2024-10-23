@@ -17,11 +17,16 @@ package protocol
 // LogSlotID is a log slot number
 type LogSlotID uint64
 
+type NewLogEntry struct {
+	*LogEntry
+	configSeq uint64
+}
+
 // newLog returns a new NOPaxos log
 func newLog(firstSlot LogSlotID) *Log {
 	return &Log{
 		firstSlotNum: firstSlot,
-		entries:      make(map[LogSlotID]*LogEntry),
+		entries:      make(map[LogSlotID]*NewLogEntry),
 	}
 }
 
@@ -29,7 +34,7 @@ func newLog(firstSlot LogSlotID) *Log {
 type Log struct {
 	firstSlotNum LogSlotID
 	lastSlotNum  LogSlotID
-	entries      map[LogSlotID]*LogEntry
+	entries      map[LogSlotID]*NewLogEntry
 }
 
 // Len returns the length of the log
@@ -48,12 +53,12 @@ func (l *Log) LastSlot() LogSlotID {
 }
 
 // Get gets a log entry
-func (l *Log) Get(slotNum LogSlotID) *LogEntry {
+func (l *Log) Get(slotNum LogSlotID) *NewLogEntry {
 	return l.entries[slotNum]
 }
 
 // Set sets a log entry
-func (l *Log) Set(entry *LogEntry) {
+func (l *Log) Set(entry *NewLogEntry) {
 	l.entries[entry.SlotNum] = entry
 	if entry.SlotNum < l.firstSlotNum {
 		l.firstSlotNum = entry.SlotNum

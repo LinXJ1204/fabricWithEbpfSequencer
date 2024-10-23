@@ -15,6 +15,8 @@
 package protocol
 
 import (
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -22,6 +24,11 @@ import (
 type Result struct {
 	Value interface{}
 	Error error
+}
+
+type NewCommandRequest struct {
+	*CommandRequest
+	ConfigSeq uint64
 }
 
 // Failed returns a boolean indicating whether the operation failed
@@ -34,8 +41,9 @@ func (r Result) Succeeded() bool {
 	return !r.Failed()
 }
 
-func (s *NOPaxos) Command(request *CommandRequest, stream ClientService_ClientStreamServer) {
+func (s *NOPaxos) Command(request *NewCommandRequest, stream ClientService_ClientStreamServer) {
 	s.logger.Receive("CommandRequest", request)
+	fmt.Println("=====CommandRequest Receive=====")
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -49,11 +57,14 @@ func (s *NOPaxos) Command(request *CommandRequest, stream ClientService_ClientSt
 	if request.SessionNum == s.viewID.SessionNum && request.MessageNum == s.sessionMessageNum {
 		// Command received in the normal case
 		slotNum := s.log.LastSlot() + 1
-		entry := &LogEntry{
-			SlotNum:    slotNum,
-			Timestamp:  request.Timestamp,
-			MessageNum: request.MessageNum,
-			Value:      request.Value,
+		entry := &NewLogEntry{
+			&LogEntry{
+				SlotNum:    slotNum,
+				Timestamp:  request.Timestamp,
+				MessageNum: request.MessageNum,
+				Value:      request.Value,
+			},
+			request.ConfigSeq,
 		}
 		s.log.Set(entry)
 
@@ -215,6 +226,6 @@ func (s *NOPaxos) query(request *QueryRequest, stream ClientService_ClientStream
 	}
 }
 
-func (s *NOPaxos) handleSlot(request *CommandRequest) {
+func (s *NOPaxos) handleSlot(request *NewCommandRequest) {
 	s.Command(request, nil)
 }

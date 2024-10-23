@@ -18,9 +18,11 @@ syntax = "proto3";
 
 package atomix.nopaxos.protocol;
 
-import "atomix/nopaxos/protocol/log.proto";
-import "gogoproto/gogo.proto";
+import "github.com/hyperledger/fabric/orderer/consensus/nopaxos/protocol/log.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/zhengweilin/protocol";
 
 option (gogoproto.testgen_all) = true;
 option (gogoproto.populate_all) = true;
@@ -74,6 +76,8 @@ message CommandRequest {
     uint64 message_num = 2 [(gogoproto.casttype) = "MessageID"];
     google.protobuf.Timestamp timestamp = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
     bytes value = 4;
+    uint64 sequencerId = 5;
+    uint64 configSeq = 6;
 }
 
 message CommandReply {
@@ -102,6 +106,8 @@ message QueryReply {
     string sender = 2 [(gogoproto.casttype) = "MemberID"];
     ViewId view_id = 3 [(gogoproto.customname) = "ViewID"];
     bytes value = 4;
+    uint64 sequencerId = 5;
+    uint64 configSeq = 6;
 }
 
 message QueryClose {
@@ -123,6 +129,8 @@ message RecoverReply {
     uint64 checkpoint_slot_num = 5 [(gogoproto.casttype) = "LogSlotID"];
     bytes checkpoint = 6;
     repeated LogEntry log = 7;
+    uint64 sequencerId = 8;
+    uint64 configSeq = 9;
 }
 
 message SlotLookup {
@@ -173,6 +181,8 @@ message ViewChangeRepairReply {
     uint64 checkpoint_slot_num = 4 [(gogoproto.casttype) = "LogSlotID"];
     bytes checkpoint = 5;
     repeated uint64 slot_nums = 6 [(gogoproto.casttype) = "LogSlotID"];
+    uint64 sequencerId = 7;
+    uint64 configSeq = 8;
 }
 
 message StartView {

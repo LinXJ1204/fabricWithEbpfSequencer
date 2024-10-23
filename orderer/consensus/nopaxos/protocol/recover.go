@@ -71,7 +71,7 @@ func (s *NOPaxos) handleRecover(request *Recover) {
 		log := make([]*LogEntry, 0, s.log.LastSlot()-s.log.FirstSlot()+1)
 		for slotNum := s.log.FirstSlot(); slotNum <= s.log.LastSlot(); slotNum++ {
 			if entry := s.log.Get(slotNum); entry != nil {
-				log = append(log, entry)
+				log = append(log, entry.LogEntry)
 			}
 		}
 		if s.currentCheckpoint != nil {
@@ -150,7 +150,12 @@ func (s *NOPaxos) handleRecoverReply(reply *RecoverReply) {
 		if len(leaderReply.Log) > 0 {
 			newLog := newLog(leaderReply.Log[0].SlotNum)
 			for _, entry := range leaderReply.Log {
-				newLog.Set(entry)
+				newLog.Set(
+					&NewLogEntry{
+						entry,
+						0,
+					},
+				)
 			}
 			s.log = newLog
 		}

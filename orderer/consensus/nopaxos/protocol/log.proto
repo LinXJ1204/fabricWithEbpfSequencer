@@ -19,7 +19,9 @@ syntax = "proto3";
 package atomix.nopaxos.protocol;
 
 import "google/protobuf/timestamp.proto";
-import "gogoproto/gogo.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "github.com/zhengweilin/protocol";
 
 option (gogoproto.testgen_all) = true;
 option (gogoproto.populate_all) = true;
@@ -30,4 +32,6 @@ message LogEntry {
     google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
     uint64 message_num = 3 [(gogoproto.casttype) = "MessageID"];
     bytes value = 4;
+    uint64 sequencerId = 5;
+    uint64 configSeq = 6;
 }

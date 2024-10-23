@@ -120,7 +120,7 @@ func (s *NOPaxos) handleViewRepair(request *ViewRepair) {
 	entries := make([]*LogEntry, 0, len(request.SlotNums))
 	for _, slotNum := range request.SlotNums {
 		if entry := s.viewLog.Get(slotNum); entry != nil {
-			entries = append(entries, entry)
+			entries = append(entries, entry.LogEntry)
 		}
 	}
 
@@ -176,7 +176,12 @@ func (s *NOPaxos) handleViewRepairReply(reply *ViewRepairReply) {
 	// For each requested slot, store the entry if one was returned. Otherwise, remove the entry
 	for _, slotNum := range request.SlotNums {
 		if entry := entries[slotNum]; entry != nil {
-			s.viewLog.Set(entry)
+			s.viewLog.Set(
+				&NewLogEntry{
+					entry,
+					0,
+				},
+			)
 		} else {
 			s.viewLog.Delete(slotNum)
 		}

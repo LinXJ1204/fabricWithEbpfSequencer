@@ -48,7 +48,7 @@ func (us *UdpServer) Start() error {
 			return nil
 		default:
 			// Read UDP data
-			n, clientAddr, err := conn.ReadFromUDP(buffer)
+			n, _, err := conn.ReadFromUDP(buffer)
 			if err != nil {
 				fmt.Println("Error reading from connection:", err)
 				continue
@@ -77,9 +77,6 @@ func (us *UdpServer) Start() error {
 				fmt.Println("Failed to unmarshal envelope:", err)
 				continue
 			}
-
-			// Display the received Envelope
-			fmt.Printf("Received Envelope from %s: Payload = %s, Signature = %s\n", clientAddr, envelope.GetPayload(), envelope.GetSignature())
 
 			chdr, isConfig, processor, err := us.BroadcastChannelSupport(envelope)
 			if err != nil {

@@ -25,8 +25,8 @@ type consenter struct {
 type chain struct {
 	support       consensus.ConsenterSupport
 	sendChan      chan *message
+	deliverChan   chan struct{}
 	exitChan      chan struct{}
-	exitChanUDP   chan struct{}
 	consenters    []*etcdraft.Consenter
 	NopaxosServer *Server
 	Count         uint64
@@ -85,14 +85,18 @@ func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consent
 		Members:  members,
 	}
 
+	deliverChan := make(chan struct{})
+
 	return &chain{
-		support:    support,
-		sendChan:   make(chan *message),
-		exitChan:   make(chan struct{}),
-		consenters: consenters,
+		support:     support,
+		sendChan:    make(chan *message),
+		exitChan:    make(chan struct{}),
+		deliverChan: deliverChan,
+		consenters:  consenters,
 		NopaxosServer: NewNodeServer(
 			cluster,
 			nopaxosServerConfig,
+			deliverChan,
 		),
 		Count: 1,
 	}
@@ -120,12 +124,20 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, s
 	fmt.Println("=======TESTTEST=======")
 	fmt.Println(sequencerNumber)
 
+	msg, err := proto.Marshal(env)
+	if err != nil {
+		return err
+	}
+
 	ch.NopaxosServer.nopaxos.Command(
-		&protocol.CommandRequest{
-			SessionNum: 1,
-			MessageNum: protocol.MessageID(ch.Count),
-			Timestamp:  time.Now(),
-			Value:      env.Payload,
+		&protocol.NewCommandRequest{
+			CommandRequest: &protocol.CommandRequest{
+				SessionNum: 1,
+				MessageNum: protocol.MessageID(ch.Count),
+				Timestamp:  time.Now(),
+				Value:      msg,
+			},
+			ConfigSeq: configSeq,
 		},
 		nil,
 	)

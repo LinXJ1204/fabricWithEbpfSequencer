@@ -188,7 +188,7 @@ func (s *NOPaxos) handleSyncRepair(request *SyncRepair) {
 	entries := make([]*LogEntry, 0, len(request.SlotNums))
 	for _, slotNum := range request.SlotNums {
 		if entry := s.log.Get(slotNum); entry != nil {
-			entries = append(entries, entry)
+			entries = append(entries, entry.LogEntry)
 		}
 	}
 
@@ -244,7 +244,12 @@ func (s *NOPaxos) handleSyncRepairReply(reply *SyncRepairReply) {
 	// For each requested slot, store the entry if one was returned. Otherwise, remove the entry
 	for _, slotNum := range request.SlotNums {
 		if entry := entries[slotNum]; entry != nil {
-			s.syncLog.Set(entry)
+			s.syncLog.Set(
+				&NewLogEntry{
+					entry,
+					0,
+				},
+			)
 		} else {
 			s.syncLog.Delete(slotNum)
 		}

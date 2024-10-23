@@ -25,14 +25,14 @@ import (
 )
 
 // NewServer returns a new NOPaxos consensus protocol server
-func NewNodeServer(clusterConfig nopaxos.NodeCluster, protocolConfig *config.ProtocolConfig) *Server {
+func NewNodeServer(clusterConfig nopaxos.NodeCluster, protocolConfig *config.ProtocolConfig, deliverChan chan struct{}) *Server {
 	member, ok := clusterConfig.Members[clusterConfig.MemberID]
 	if !ok {
 		panic("Local member is not present in cluster configuration!")
 	}
 
 	cluster := nopaxos.NewCluster(clusterConfig)
-	nopaxos := nopaxos.NewNOPaxos(cluster, protocolConfig)
+	nopaxos := nopaxos.NewNOPaxos(cluster, protocolConfig, deliverChan)
 	server := &Server{
 		nopaxos: nopaxos,
 		port:    member.ProtocolPort,

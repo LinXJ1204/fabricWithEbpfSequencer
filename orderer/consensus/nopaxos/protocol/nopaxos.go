@@ -15,6 +15,7 @@
 package protocol
 
 import (
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ import (
 const bloomFilterHashFunctions = 5
 
 // NewNOPaxos returns a new NOPaxos protocol state struct
-func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig) *NOPaxos {
+func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig, deliverChan chan struct{}) *NOPaxos {
 	nopaxos := &NOPaxos{
 		logger:   util.NewNodeLogger(string(cluster.Member())),
 		config:   config,
@@ -51,6 +52,7 @@ func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig) *NOPaxos {
 		viewChangeRepairReps: make(map[MemberID]*ViewChangeRepairReply),
 		gapCommitReps:        make(map[MemberID]*GapCommitReply),
 		syncReps:             make(map[MemberID]*SyncReply),
+		deliverChan:          deliverChan,
 	}
 	nopaxos.start()
 	return nopaxos
@@ -115,6 +117,7 @@ type NOPaxos struct {
 	syncTicker           *time.Ticker
 	timeoutTimer         *time.Timer
 	mu                   sync.RWMutex
+	deliverChan          chan struct{}
 }
 
 func (s *NOPaxos) start() {
@@ -123,6 +126,7 @@ func (s *NOPaxos) start() {
 	s.setCheckpointTicker()
 	go s.resetTimeout()
 	s.mu.Unlock()
+	fmt.Println("=====NoPaxos Protocol Start=====")
 }
 
 func (s *NOPaxos) Watch(watcher func(Status)) {
@@ -223,7 +227,11 @@ func (s *NOPaxos) ClientStream(stream ClientService_ClientStreamServer) error {
 func (s *NOPaxos) handleClient(message *ClientMessage, stream ClientService_ClientStreamServer) {
 	switch m := message.Message.(type) {
 	case *ClientMessage_Command:
-		s.Command(m.Command, stream)
+		nc := &NewCommandRequest{
+			m.Command,
+			0,
+		}
+		s.Command(nc, stream)
 	case *ClientMessage_Query:
 		s.query(m.Query, stream)
 	}
@@ -245,7 +253,11 @@ func (s *NOPaxos) ReplicaStream(stream ReplicaService_ReplicaStreamServer) error
 func (s *NOPaxos) handleReplica(message *ReplicaMessage) {
 	switch m := message.Message.(type) {
 	case *ReplicaMessage_Command:
-		s.handleSlot(m.Command)
+		nc := &NewCommandRequest{
+			m.Command,
+			0,
+		}
+		s.handleSlot(nc)
 	case *ReplicaMessage_SlotLookup:
 		s.handleSlotLookup(m.SlotLookup)
 	case *ReplicaMessage_GapCommit:
