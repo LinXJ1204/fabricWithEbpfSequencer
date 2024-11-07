@@ -68,6 +68,10 @@ func (s *NOPaxos) Command(request *NewCommandRequest, stream ClientService_Clien
 		}
 		s.log.Set(entry)
 
+		if s.getLeader(s.viewID) == s.cluster.Member() {
+
+		}
+
 		// Apply the command to the state machine before responding if leader
 		if stream != nil {
 			if s.getLeader(s.viewID) == s.cluster.Member() {

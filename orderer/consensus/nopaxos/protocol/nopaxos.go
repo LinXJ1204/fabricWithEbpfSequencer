@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	"github.com/hyperledger/fabric/orderer/consensus/nopaxos/config"
 	"github.com/hyperledger/fabric/orderer/consensus/nopaxos/util"
 )
@@ -28,7 +29,7 @@ import (
 const bloomFilterHashFunctions = 5
 
 // NewNOPaxos returns a new NOPaxos protocol state struct
-func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig, deliverChan chan struct{}) *NOPaxos {
+func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig, deliverChan chan []struct{}) *NOPaxos {
 	nopaxos := &NOPaxos{
 		logger:   util.NewNodeLogger(string(cluster.Member())),
 		config:   config,
@@ -56,6 +57,12 @@ func NewNOPaxos(cluster Cluster, config *config.ProtocolConfig, deliverChan chan
 	}
 	nopaxos.start()
 	return nopaxos
+}
+
+type message struct {
+	configSeq uint64
+	normalMsg *cb.Envelope
+	configMsg *cb.Envelope
 }
 
 // MemberID is the ID of a NOPaxos cluster member
@@ -117,7 +124,8 @@ type NOPaxos struct {
 	syncTicker           *time.Ticker
 	timeoutTimer         *time.Timer
 	mu                   sync.RWMutex
-	deliverChan          chan struct{}
+	deliverChan          chan []struct{}
+	pendingTxs           []*message
 }
 
 func (s *NOPaxos) start() {

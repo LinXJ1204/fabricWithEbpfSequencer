@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net"
 	"os"
 	"sync/atomic"
 	"time"
@@ -27,6 +26,7 @@ import (
 )
 
 var serverAddrStr = os.Getenv("SERVER_ADDR")
+var count uint64 = 0
 
 // Submit will send the signed transaction to the ordering service. The response indicates whether the transaction was
 // successfully received by the orderer. This does not imply successful commit of the transaction, only that is has
@@ -166,6 +166,9 @@ func computeBFTQuorum(N uint64) (Q int, F int) {
 func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *common.Envelope, logger *flogging.FabricLogger) (*gp.SubmitResponse, error) {
 	// non-BFT - only need one successful response
 	// try each orderer in random order
+	logger.Infow("Sending transaction to orderer", "Count:", count)
+	count++
+
 	err := gs.broadcastByUDP(txn)
 	if err != nil {
 		return &gp.SubmitResponse{}, err
@@ -193,38 +196,27 @@ func (gs *Server) broadcast(ctx context.Context, orderer *orderer, txn *common.E
 }
 
 func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
-	if serverAddrStr == "" {
-		serverAddrStr = "192.168.50.230:7072"
-	}
-
-	fmt.Println("Sending transaction to orderer by UDP!!!")
-
-	serverAddr, err := net.ResolveUDPAddr("udp", serverAddrStr)
-	if err != nil {
-		fmt.Println("Error resolving address:", err)
-		return err
-	}
-
-	conn, err := net.DialUDP("udp", nil, serverAddr)
-	if err != nil {
-		fmt.Println("Error connecting to server:", err)
-		return err
-	}
-	defer conn.Close()
-
 	data, err := proto.Marshal(txn)
 	if err != nil {
 		fmt.Println("Failed to marshal envelope:", err)
 		return err
 	}
 
-	seqBytes := []byte{0x00, 0x00} // The extra bytes you want to add
+	seqBytes := []byte{0x00, 0x00, 0x00, 0x00} // The extra bytes you want to add
 	dataWithseqBytes := append(data, seqBytes...)
 
-	_, err = conn.Write(dataWithseqBytes)
+	_, err = gs.UdpGateway.Write(dataWithseqBytes)
 	if err != nil {
-		fmt.Println("Error sending envelope with extra bytes:", err)
-		return err
+		// Attempt to reconnect
+		if err := gs.reconnect(); err != nil {
+			return fmt.Errorf("failed to reconnect: %w", err)
+		}
+
+		// Retry sending the message after reconnecting
+		_, err = gs.UdpGateway.Write(dataWithseqBytes)
+		if err != nil {
+			return fmt.Errorf("failed to resend message after reconnecting: %w", err)
+		}
 	}
 
 	return nil

@@ -25,7 +25,7 @@ type consenter struct {
 type chain struct {
 	support       consensus.ConsenterSupport
 	sendChan      chan *message
-	deliverChan   chan struct{}
+	deliverChan   chan []*message
 	exitChan      chan struct{}
 	consenters    []*etcdraft.Consenter
 	NopaxosServer *Server
@@ -85,13 +85,13 @@ func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consent
 		Members:  members,
 	}
 
-	deliverChan := make(chan struct{})
+	deliverChan := make(chan []struct{})
 
 	return &chain{
 		support:     support,
 		sendChan:    make(chan *message),
 		exitChan:    make(chan struct{}),
-		deliverChan: deliverChan,
+		deliverChan: make(chan []*message),
 		consenters:  consenters,
 		NopaxosServer: NewNodeServer(
 			cluster,
@@ -133,7 +133,7 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, s
 		&protocol.NewCommandRequest{
 			CommandRequest: &protocol.CommandRequest{
 				SessionNum: 1,
-				MessageNum: protocol.MessageID(ch.Count),
+				MessageNum: protocol.MessageID(sequencerNumber),
 				Timestamp:  time.Now(),
 				Value:      msg,
 			},
@@ -201,8 +201,14 @@ func (ch *chain) main() {
 				batches, pending := ch.support.BlockCutter().Ordered(msg.normalMsg)
 
 				for _, batch := range batches {
-					block := ch.support.CreateNextBlock(batch)
-					ch.support.WriteBlock(block, nil)
+					logger.Warningf("Blocksize: %d", len(batch))
+					if len(batch) > 500 {
+						block := ch.support.CreateNextBlock(batch)
+						ch.support.WriteBlock(block, nil)
+						if timer != nil {
+							timer = nil
+						}
+					}
 				}
 
 				switch {

@@ -7,6 +7,7 @@ package gateway
 
 import (
 	"context"
+	"net"
 
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
 	peerproto "github.com/hyperledger/fabric-protos-go-apiv2/peer"
@@ -33,6 +34,7 @@ type Server struct {
 	logger           *flogging.FabricLogger
 	ledgerProvider   ledger.Provider
 	getChannelConfig channelConfigGetter
+	UdpGateway       *net.UDPConn
 }
 
 type EndorserServerAdapter struct {
@@ -104,7 +106,8 @@ func newServer(localEndorser peerproto.EndorserClient,
 	ordererEndpointOverrides map[string]*orderers.Endpoint,
 	getChannelConfig channelConfigGetter,
 ) *Server {
-	return &Server{
+
+	s := &Server{
 		registry: &registry{
 			localEndorser: &endorser{
 				client:         localEndorser,
@@ -130,4 +133,8 @@ func newServer(localEndorser peerproto.EndorserClient,
 		ledgerProvider:   ledgerProvider,
 		getChannelConfig: getChannelConfig,
 	}
+
+	s.connect()
+
+	return s
 }

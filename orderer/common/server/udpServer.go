@@ -59,12 +59,12 @@ func (us *UdpServer) Start() error {
 				fmt.Println("Not enough data received")
 				continue
 			}
-			extraBytes := buffer[n-2 : n] // The last 2 bytes are the extra bytes
+			extraBytes := buffer[n-4 : n] // The last 2 bytes are the extra bytes
 			fmt.Printf("Received extra bytes: %x\n", extraBytes)
 			// Create a larger byte slice to hold the uint64 value (8 bytes)
 			var paddedBytes [8]byte
 			// Copy the two bytes into the last two positions of the paddedBytes slice
-			copy(paddedBytes[6:], extraBytes)
+			copy(paddedBytes[4:], extraBytes)
 
 			// Convert to uint64 using BigEndian (for example)
 			extraUint64 := binary.BigEndian.Uint64(paddedBytes[:])
@@ -72,7 +72,7 @@ func (us *UdpServer) Start() error {
 
 			// Unmarshal the remaining part into the Envelope struct (excluding the last 2 bytes)
 			envelope := &common.Envelope{}
-			err = proto.Unmarshal(buffer[:n-2], envelope)
+			err = proto.Unmarshal(buffer[:n-4], envelope)
 			if err != nil {
 				fmt.Println("Failed to unmarshal envelope:", err)
 				continue
