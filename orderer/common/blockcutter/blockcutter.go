@@ -83,6 +83,9 @@ func (r *receiver) Ordered(msg *cb.Envelope) (messageBatches [][]*cb.Envelope, p
 	}
 
 	batchSize := ordererConfig.BatchSize()
+	batchSize.MaxMessageCount = 512
+	batchSize.PreferredMaxBytes = 5120
+	batchSize.AbsoluteMaxBytes = 5120
 
 	messageSizeBytes := messageSizeBytes(msg)
 	if messageSizeBytes > batchSize.PreferredMaxBytes {

@@ -30,6 +30,7 @@ type chain struct {
 	consenters    []*etcdraft.Consenter
 	NopaxosServer *Server
 	Count         uint64
+	batch         []*cb.Envelope
 }
 
 type message struct {
@@ -99,6 +100,7 @@ func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consent
 			deliverChan,
 		),
 		Count: 1,
+		batch: make([]*cb.Envelope, 0),
 	}
 }
 
@@ -198,18 +200,19 @@ func (ch *chain) main() {
 						continue
 					}
 				}
-				batches, pending := ch.support.BlockCutter().Ordered(msg.normalMsg)
 
-				for _, batch := range batches {
-					logger.Warningf("Blocksize: %d", len(batch))
-					if len(batch) > 500 {
-						block := ch.support.CreateNextBlock(batch)
-						ch.support.WriteBlock(block, nil)
-						if timer != nil {
-							timer = nil
-						}
+				ch.batch = append(ch.batch, msg.normalMsg)
+
+				if len(ch.batch) > 512 {
+					block := ch.support.CreateNextBlock(ch.batch)
+					ch.support.WriteBlock(block, nil)
+					ch.batch = []*cb.Envelope{}
+					if timer != nil {
+						timer = nil
 					}
 				}
+
+				pending := len(ch.batch) > 0
 
 				switch {
 				case timer != nil && !pending:
@@ -224,7 +227,6 @@ func (ch *chain) main() {
 					// 1. Timer is already running and there are messages pending
 					// 2. Timer is not set and there are no messages pending
 				}
-
 			} else {
 				// ConfigMsg
 				if msg.configSeq < seq {
