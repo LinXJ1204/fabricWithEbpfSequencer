@@ -220,7 +220,7 @@ func (ch *chain) main() {
 					timer = nil
 				case timer == nil && pending:
 					// Timer is not already running and there are messages pending, so start it
-					timer = time.After(ch.support.SharedConfig().BatchTimeout())
+					timer = time.After(1 * time.Second)
 					logger.Debugf("Just began %s batch timer", ch.support.SharedConfig().BatchTimeout().String())
 				default:
 					// Do nothing when:
@@ -250,14 +250,15 @@ func (ch *chain) main() {
 			//clear the timer
 			timer = nil
 
-			batch := ch.support.BlockCutter().Cut()
-			if len(batch) == 0 {
+			if len(ch.batch) == 0 {
 				logger.Warningf("Batch timer expired with no pending requests, this might indicate a bug")
 				continue
 			}
 			logger.Debugf("Batch timer expired, creating block")
-			block := ch.support.CreateNextBlock(batch)
+			block := ch.support.CreateNextBlock(ch.batch)
 			ch.support.WriteBlock(block, nil)
+			ch.batch = []*cb.Envelope{}
+
 		case <-ch.exitChan:
 			logger.Debugf("Exiting")
 			return

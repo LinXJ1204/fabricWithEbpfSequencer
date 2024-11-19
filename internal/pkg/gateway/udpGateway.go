@@ -8,7 +8,7 @@ import (
 
 func (gs *Server) connect() error {
 
-	sequencerAddr, err := net.ResolveUDPAddr("udp", "192.168.50.230:7072")
+	sequencerAddr, err := net.ResolveUDPAddr("udp", "host.docker.internal:7072")
 	if err != nil {
 		return fmt.Errorf("error connecting to server: %w", err)
 	}
