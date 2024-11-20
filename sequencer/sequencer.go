@@ -27,7 +27,7 @@ func main() {
 
 	buffer := make([]byte, 10240)
 
-	ordererAddress := net.JoinHostPort("127.0.0.1", "8073")
+	ordererAddress := net.JoinHostPort("192.168.50.224", "8073")
 
 	ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
 	if err != nil {
