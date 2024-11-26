@@ -10,8 +10,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net"
 	"os"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
@@ -169,7 +171,7 @@ func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *co
 	logger.Infow("Sending transaction to orderer", "Count:", count)
 	count++
 
-	err := gs.broadcastByUDP(txn)
+	err := gs.broadcastByUDP_NF(txn)
 	if err != nil {
 		return &gp.SubmitResponse{}, err
 	}
@@ -217,6 +219,49 @@ func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
 		if err != nil {
 			return fmt.Errorf("failed to resend message after reconnecting: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (gs *Server) broadcastByUDP_NF(txn *common.Envelope) error {
+	sequencerAddr, err := net.ResolveUDPAddr("udp", "192.168.50.230:7072")
+
+	data, err := proto.Marshal(txn)
+	if err != nil {
+		fmt.Println("Failed to marshal envelope:", err)
+		return err
+	}
+
+	seqBytes := []byte{0x00, 0x00, 0x00, 0x00} // The extra bytes you want to add
+	dataWithseqBytes := append(data, seqBytes...)
+
+	// Create a raw socket
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW)
+	if err != nil {
+		fmt.Println("Failed to syscall.Socket:", err)
+	}
+	defer syscall.Close(fd)
+
+	// Set the DF bit by creating the IP header manually
+	var ipHeader []byte
+	// You need to construct the IP header here, including setting the DF bit
+	// This is just a placeholder
+
+	// Create the UDP payload
+
+	// Combine IP header and UDP payload
+	packet := append(ipHeader, dataWithseqBytes...)
+
+	// Send the packet
+	destSockAddr := syscall.SockaddrInet4{
+		Port: sequencerAddr.Port,
+	}
+	copy(destSockAddr.Addr[:], sequencerAddr.IP.To4())
+
+	err = syscall.Sendto(fd, packet, 0, &destSockAddr)
+	if err != nil {
+		fmt.Println("Failed to syscall.Sendto:", err)
 	}
 
 	return nil
