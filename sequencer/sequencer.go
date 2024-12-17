@@ -55,7 +55,7 @@ func main() {
 			continue
 		}
 		seqBytes := make([]byte, 4) // The extra bytes you want to add
-		binary.BigEndian.PutUint32(seqBytes, count)
+		binary.LittleEndian.PutUint32(seqBytes, count)
 		dataWithseqBytes := append(buffer[:n-4], seqBytes...)
 
 		fmt.Println("=====MSG COUNT=====")
