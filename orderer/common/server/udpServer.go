@@ -62,7 +62,7 @@ func (us *UdpServer) Start() error {
 			extraBytes := buffer[n-4 : n] // The last 2 bytes are the extra bytes
 			fmt.Printf("Received extra bytes: %x\n", extraBytes)
 			// Create a larger byte slice to hold the uint64 value (8 bytes)
-			var paddedBytes [8]byte
+			var paddedBytes [4]byte
 			// Copy the two bytes into the last two positions of the paddedBytes slice
 			copy(paddedBytes[4:], extraBytes)
 
