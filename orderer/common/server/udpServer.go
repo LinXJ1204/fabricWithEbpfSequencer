@@ -67,7 +67,7 @@ func (us *UdpServer) Start() error {
 			copy(paddedBytes[4:], extraBytes)
 
 			// Convert to uint64 using BigEndian (for example)
-			extraUint64 := binary.LittleEndian.Uint64(paddedBytes[:])
+			extraUint64 := binary.BigEndian.Uint64(paddedBytes[:])
 			fmt.Printf("Received extra bytes as uint64: %d\n", extraUint64)
 
 			// Unmarshal the remaining part into the Envelope struct (excluding the last 2 bytes)

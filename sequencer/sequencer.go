@@ -27,18 +27,6 @@ func main() {
 
 	buffer := make([]byte, 10240)
 
-	ordererAddress := net.JoinHostPort("192.168.50.224", "8073")
-
-	ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
-	if err != nil {
-		fmt.Println("Error resolving address:", err)
-		return
-	}
-
-	ordererConn, err := net.DialUDP("udp", nil, ordererServerAddr)
-	if err != nil {
-		fmt.Println("Error connecting to server:", err)
-	}
 	defer conn.Close()
 
 	for {
@@ -55,18 +43,33 @@ func main() {
 			continue
 		}
 		seqBytes := make([]byte, 4) // The extra bytes you want to add
-		binary.LittleEndian.PutUint32(seqBytes, count)
+		binary.BigEndian.PutUint32(seqBytes, count)
 		dataWithseqBytes := append(buffer[:n-4], seqBytes...)
 
 		fmt.Println("=====MSG COUNT=====")
 		fmt.Println(count)
 
-		//ports := [5]string{"7073", "8073", "9073", "10073", "11073"}
-		//addrs := [5]string{"192.168.50.224", "192.168.50.224", "192.168.50.224", "192.168.50.213", "192.168.50.213"}
+		ports := [5]string{"7073", "8073", "9073", "10073", "11073"}
+		addrs := [5]string{"192.168.50.224", "192.168.50.213", "192.168.50.230", "192.168.50.239", "192.168.50.219"}
 
-		err = forward(dataWithseqBytes, ordererConn) // Use local err to avoid data race
-		if err != nil {
-			fmt.Println("Error forward to orderer:", err)
+		for i := 1; i < 5; i++ {
+			ordererAddress := net.JoinHostPort(addrs[0], ports[0])
+
+			ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
+			if err != nil {
+				fmt.Println("Error resolving address:", err)
+				continue
+			}
+
+			ordererConn, err := net.DialUDP("udp", nil, ordererServerAddr)
+			if err != nil {
+				fmt.Println("Error connecting to server:", err)
+			}
+
+			err = forward(dataWithseqBytes, ordererConn) // Use local err to avoid data race
+			if err != nil {
+				fmt.Println("Error forward to orderer:", err)
+			}
 		}
 
 		count++
