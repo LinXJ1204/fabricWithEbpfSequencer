@@ -75,7 +75,7 @@ func (us *UdpServer) Start() error {
 
 			// Unmarshal the remaining part into the Envelope struct (excluding the last 2 bytes)
 			envelope := &common.Envelope{}
-			err = proto.Unmarshal(buffer[:n-4], envelope)
+			err = proto.Unmarshal(buffer[2:n-4], envelope)
 			if err != nil {
 				fmt.Println("Failed to unmarshal envelope:", err)
 				continue
