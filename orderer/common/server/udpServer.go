@@ -62,9 +62,12 @@ func (us *UdpServer) Start() error {
 			}
 			extraBytes := buffer[n-4 : n] // The last 2 bytes are the extra bytes
 			fmt.Printf("Received extra bytes: %x\n", extraBytes)
+
+			paddedBytes := make([]byte, 8)
+			copy(paddedBytes[8-len(extraBytes):], extraBytes)
 			// 解码为大端序的无符号整数 (uint64)
 			var bigEndianValue uint64
-			err = binary.Read(bytes.NewReader(extraBytes), binary.BigEndian, &bigEndianValue)
+			err = binary.Read(bytes.NewReader(paddedBytes), binary.BigEndian, &bigEndianValue)
 			if err != nil {
 				fmt.Println("Error decoding Big Endian value:", err)
 			}
