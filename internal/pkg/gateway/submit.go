@@ -204,8 +204,10 @@ func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
 
 	seqBytes := []byte{0x00, 0x00, 0x00, 0x00} // The extra bytes you want to add
 	dataWithseqBytes := append(data, seqBytes...)
+	frontResver := []byte{0x00, 0x00}
+	newType := append(frontResver, dataWithseqBytes...)
 
-	_, err = gs.UdpGateway.Write(dataWithseqBytes)
+	_, err = gs.UdpGateway.Write(newType)
 	if err != nil {
 		// Attempt to reconnect
 		if err := gs.reconnect(); err != nil {
@@ -213,7 +215,7 @@ func (gs *Server) broadcastByUDP(txn *common.Envelope) error {
 		}
 
 		// Retry sending the message after reconnecting
-		_, err = gs.UdpGateway.Write(dataWithseqBytes)
+		_, err = gs.UdpGateway.Write(newType)
 		if err != nil {
 			return fmt.Errorf("failed to resend message after reconnecting: %w", err)
 		}
