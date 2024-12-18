@@ -62,13 +62,13 @@ func (us *UdpServer) Start() error {
 			}
 			extraBytes := buffer[n-4 : n] // The last 2 bytes are the extra bytes
 			fmt.Printf("Received extra bytes: %x\n", extraBytes)
-			var littleEndianValue uint64
-			// Create a larger byte slice to hold the uint64 value (8 bytes)
-			err = binary.Read(bytes.NewReader(extraBytes), binary.LittleEndian, &littleEndianValue)
+			// 解码为大端序的无符号整数 (uint64)
+			var bigEndianValue uint64
+			err = binary.Read(bytes.NewReader(extraBytes), binary.BigEndian, &bigEndianValue)
 			if err != nil {
-				fmt.Println("Error decoding Little Endian value:", err)
+				fmt.Println("Error decoding Big Endian value:", err)
 			}
-			fmt.Printf("Little Endian interpreted value (uint64): %d (0x%x)\n", littleEndianValue, littleEndianValue)
+			fmt.Printf("Big Endian interpreted value (uint64): %d (0x%x)\n", bigEndianValue, bigEndianValue)
 
 			// Unmarshal the remaining part into the Envelope struct (excluding the last 2 bytes)
 			envelope := &common.Envelope{}
@@ -97,7 +97,7 @@ func (us *UdpServer) Start() error {
 					continue
 				}
 
-				err = processor.Order(envelope, configSeq, 1, littleEndianValue)
+				err = processor.Order(envelope, configSeq, 1, bigEndianValue)
 				if err != nil {
 					logger.Warningf("[channel: %s] Rejecting broadcast of normal message from %s with SERVICE_UNAVAILABLE: rejected by Order: %s", chdr.ChannelId, addr, err)
 					continue
