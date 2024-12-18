@@ -64,10 +64,10 @@ func (us *UdpServer) Start() error {
 			fmt.Printf("Received extra bytes: %x\n", extraBytes)
 
 			paddedBytes := make([]byte, 8)
-			copy(paddedBytes[8-len(extraBytes):], extraBytes)
+			copy(paddedBytes[:8-len(extraBytes)], extraBytes)
 			// 解码为大端序的无符号整数 (uint64)
 			var bigEndianValue uint64
-			err = binary.Read(bytes.NewReader(paddedBytes), binary.BigEndian, &bigEndianValue)
+			err = binary.Read(bytes.NewReader(paddedBytes), binary.LittleEndian, &bigEndianValue)
 			if err != nil {
 				fmt.Println("Error decoding Big Endian value:", err)
 			}
