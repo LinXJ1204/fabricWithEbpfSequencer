@@ -1,4 +1,4 @@
-package receiver
+package main
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Define the port and address
-	address := ":8086"
+	address := ":8073"
 
 	// Create a UDP address
 	udpAddr, err := net.ResolveUDPAddr("udp", address)
