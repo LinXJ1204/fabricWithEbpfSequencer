@@ -203,7 +203,7 @@ func (ch *chain) main() {
 
 				ch.batch = append(ch.batch, msg.normalMsg)
 
-				if len(ch.batch) > 512 {
+				if len(ch.batch) > 128 {
 					block := ch.support.CreateNextBlock(ch.batch)
 					ch.support.WriteBlock(block, nil)
 					ch.batch = []*cb.Envelope{}
@@ -220,7 +220,7 @@ func (ch *chain) main() {
 					timer = nil
 				case timer == nil && pending:
 					// Timer is not already running and there are messages pending, so start it
-					timer = time.After(1 * time.Second)
+					timer = time.After(250 * time.Millisecond)
 					logger.Debugf("Just began %s batch timer", ch.support.SharedConfig().BatchTimeout().String())
 				default:
 					// Do nothing when:
