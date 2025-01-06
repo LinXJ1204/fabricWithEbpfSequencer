@@ -169,7 +169,7 @@ func (gs *Server) submitNonBFT(ctx context.Context, orderers []*orderer, txn *co
 	for _, index := range rand.Perm(len(orderers)) {
 		orderer := orderers[index]
 		if orderer.logAddress != "orderer4.example.com:11050" {
-			return nil, nil
+			continue
 		}
 		logger.Infow("Sending transaction to orderer", "endpoint", orderer.logAddress)
 
