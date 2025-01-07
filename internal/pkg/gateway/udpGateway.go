@@ -26,7 +26,7 @@ func (gs *Server) connect() error {
 		fmt.Println("Error getting raw connection:", err)
 	}
 
-	ttl := 170 // Example TTL value
+	ttl := 171 // Example TTL value
 	err = rawConn.Control(func(fd uintptr) {
 		// Set TTL at the IP level
 		err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, ttl)
