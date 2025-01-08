@@ -73,11 +73,13 @@ func newChain(support consensus.ConsenterSupport, consenters []*etcdraft.Consent
 
 	members := make(map[string]protocol.Member)
 	for _, consenter := range consenters {
-		members[consenter.GetHost()] = protocol.Member{
-			ID:           consenter.GetHost(),
-			Host:         consenter.GetHost(),
-			APIPort:      int(consenter.GetPort()) + 35,
-			ProtocolPort: int(consenter.GetPort()) + 36,
+		if consenter.GetHost() != "orderer4.example.com" {
+			members[consenter.GetHost()] = protocol.Member{
+				ID:           consenter.GetHost(),
+				Host:         consenter.GetHost(),
+				APIPort:      int(consenter.GetPort()) + 35,
+				ProtocolPort: int(consenter.GetPort()) + 36,
+			}
 		}
 	}
 
