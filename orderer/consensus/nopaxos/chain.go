@@ -205,7 +205,7 @@ func (ch *chain) main() {
 
 				ch.batch = append(ch.batch, msg.normalMsg)
 
-				if len(ch.batch) > 256 {
+				if len(ch.batch) > 512 {
 					block := ch.support.CreateNextBlock(ch.batch)
 					ch.support.WriteBlock(block, nil)
 					ch.batch = []*cb.Envelope{}
