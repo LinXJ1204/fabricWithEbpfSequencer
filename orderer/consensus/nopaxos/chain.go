@@ -149,7 +149,7 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, s
 		nil,
 	)
 
-	ch.Count++
+	ch.Count = ch.Count + 1
 
 	if !ch.NopaxosServer.nopaxos.IsLeader() {
 		return nil
