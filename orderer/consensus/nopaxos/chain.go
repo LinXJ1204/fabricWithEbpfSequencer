@@ -128,7 +128,7 @@ func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, s
 	fmt.Println("=======TESTTEST=======")
 	fmt.Println(sequencerNumber)
 	fmt.Println("=======Msg Drop Rate=======")
-	fmt.Println(ch.Count/sequencerNumber + 1)
+	fmt.Println(ch.Count / (sequencerNumber + 1))
 	fmt.Println("=======Msg Drop Rate=======")
 
 	msg, err := proto.Marshal(env)
