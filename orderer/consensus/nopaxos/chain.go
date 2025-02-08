@@ -127,6 +127,9 @@ func (ch *chain) WaitReady() error {
 func (ch *chain) Order(env *cb.Envelope, configSeq uint64, sequencerId uint64, sequencerNumber uint64) error {
 	fmt.Println("=======TESTTEST=======")
 	fmt.Println(sequencerNumber)
+	fmt.Println("=======Msg Drop Rate=======")
+	fmt.Println(ch.Count / sequencerNumber)
+	fmt.Println("=======Msg Drop Rate=======")
 
 	msg, err := proto.Marshal(env)
 	if err != nil {
@@ -205,7 +208,7 @@ func (ch *chain) main() {
 
 				ch.batch = append(ch.batch, msg.normalMsg)
 
-				if len(ch.batch) > 64 {
+				if len(ch.batch) > 256 {
 					block := ch.support.CreateNextBlock(ch.batch)
 					ch.support.WriteBlock(block, nil)
 					ch.batch = []*cb.Envelope{}

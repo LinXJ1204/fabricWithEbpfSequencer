@@ -65,7 +65,6 @@ func (us *UdpServer) Start() error {
 
 			paddedBytes := make([]byte, 8)
 			copy(paddedBytes[:8-len(extraBytes)], extraBytes)
-			// 解码为大端序的无符号整数 (uint64)
 			var bigEndianValue uint64
 			err = binary.Read(bytes.NewReader(paddedBytes), binary.LittleEndian, &bigEndianValue)
 			if err != nil {
