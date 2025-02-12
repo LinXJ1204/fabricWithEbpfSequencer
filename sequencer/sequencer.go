@@ -4,12 +4,17 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"sync"
 )
 
 var wgg sync.WaitGroup
 
 func main() {
+	param1 := os.Args[1] // First argument (should be an integer)
+	broadcastCount, _ := strconv.Atoi(param1)
+
 	addr, err := net.ResolveUDPAddr("udp", ":7072")
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
@@ -43,16 +48,16 @@ func main() {
 			continue
 		}
 		seqBytes := make([]byte, 4) // The extra bytes you want to add
-		binary.BigEndian.PutUint32(seqBytes, count)
+		binary.LittleEndian.PutUint32(seqBytes, count)
 		dataWithseqBytes := append(buffer[:n-4], seqBytes...)
 
 		fmt.Println("=====MSG COUNT=====")
 		fmt.Println(count)
 
-		ports := [5]string{"7073", "8073", "9073", "10073"}
-		addrs := [5]string{"192.168.50.239", "192.168.50.230", "192.168.50.219", "192.168.50.182"}
+		ports := [5]string{"7073", "9073", "10073", "11073", "8073"}
+		addrs := [5]string{"192.168.50.239", "192.168.50.219", "192.168.50.182", "192.168.50.188", "192.168.50.230"}
 
-		for i := 1; i < 5; i++ {
+		for i := 5 - broadcastCount; i < 5; i++ {
 			ordererAddress := net.JoinHostPort(addrs[0], ports[0])
 
 			ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
