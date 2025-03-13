@@ -58,7 +58,7 @@ func main() {
 		addrs := [5]string{"192.168.50.239", "192.168.50.219", "192.168.50.182", "192.168.50.188", "192.168.50.230"}
 
 		for i := 5 - broadcastCount; i < 5; i++ {
-			ordererAddress := net.JoinHostPort(addrs[0], ports[0])
+			ordererAddress := net.JoinHostPort(addrs[i], ports[i])
 
 			ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
 			if err != nil {
