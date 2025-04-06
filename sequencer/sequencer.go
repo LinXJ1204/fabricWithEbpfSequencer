@@ -54,10 +54,10 @@ func main() {
 		fmt.Println("=====MSG COUNT=====")
 		fmt.Println(count)
 
-		ports := [5]string{"7073", "9073", "10073", "11073", "8073"}
-		addrs := [5]string{"192.168.50.239", "192.168.50.219", "192.168.50.182", "192.168.50.188", "192.168.50.230"}
+		ports := [9]string{"3073", "4073", "5073", "6073", "7073", "9073", "10073", "11073", "8073"}
+		addrs := [9]string{"192.168.50.232", "192.168.50.123", "192.168.50.137", "192.168.50.188", "192.168.50.239", "192.168.50.219", "192.168.50.182", "192.168.50.188", "192.168.50.230"}
 
-		for i := 5 - broadcastCount; i < 5; i++ {
+		for i := 9 - broadcastCount; i < 10; i++ {
 			ordererAddress := net.JoinHostPort(addrs[i], ports[i])
 
 			ordererServerAddr, err := net.ResolveUDPAddr("udp", ordererAddress)
